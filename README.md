@@ -22,10 +22,10 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 除了分类，胶囊网络还能由DigitCaps 层重建图片信息，依赖以下的解码器结构：<br>
 <p align="center">
-	<img src="https://image.jiqizhixin.com/uploads/editor/c80451b9-99a3-4edc-aac1-a2a67d21d74d/640.png" alt="Sample"  width="500">
+	<img src="http://5b0988e595225.cdn.sohucs.com/images/20180328/5c0bb065da184881ac44fe456dbb3042.jpeg" alt="Sample"  width="500">
 </p>
 
-可以看到，解码器主要包含若干全连接层。以 MNIST 数据集为例，每张图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 变换成手写数字重构图片。
+可以看到，解码器主要包含若干全连接层。以 MNIST 数据集为例，每张图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
 
 
 
