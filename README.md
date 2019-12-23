@@ -6,4 +6,7 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 为了让神经网络克服上述问题，胶囊网络被提出。
 
-下图是胶囊神经网络的结构示意图<>
+下图是胶囊神经网络的结构示意图<br>
+<p align="center">
+	<img src="https://image.jiqizhixin.com/uploads/editor/bcdc9a37-9371-4a2e-a105-a80a1e76f1c9/640.png" alt="Sample"  width="250">
+</p>
