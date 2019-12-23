@@ -31,18 +31,6 @@ This project will explore the capsule network, take MNIST as an example, the cod
 第四步，对Digit Capsule 中的10 个向量求模，模值最大的向量代表的就是图片概率最大的那个分类。胶囊网络用向量模的大小衡量某个实体出现的概率，模值越大，概率越大。需要注意的是，Capsule 输出的概率总和并不等于 1，也就是 Capsule 有同时识别多个物体的能力。与传统 CNN 的全连接分类层相比，胶囊网络的 DigitCaps 层显然包含更多信息。
 
 
-## 损失函数<br>
-由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
-<p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="400">
-</p>
-
-其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测 k 类存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测 k 类不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重
-总的损失，是各个样例损失之和。
-
-论文中 m+= 0.9, m-= 0.1, λ = 0.5。即：如果 k 类存在，||vk|| 不会小于 0.9；如果 k 类不存在，||vk|| 不会大于 0.1；惩罚假阳性的重要性大概是惩罚假阴性的重要性的 2 倍。
-
-
 ## 重构表示<br>
 除了分类，胶囊网络还能由DigitCaps 层重建图片信息，依赖以下的解码器结构：<br>
 <p align="center">
@@ -52,7 +40,35 @@ This project will explore the capsule network, take MNIST as an example, the cod
 可以看到，解码器主要包含若干全连接层。重构的时候单独取出需要重构的向量(上图橘色) ，使用全连接网络重构。以 MNIST 数据集为例，图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
 
 
+## 损失函数<br>
+由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="450">
+</p>
 
+其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测 k 类存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测 k 类不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重
+总的损失，是各个样例损失之和。
+
+论文中 m+= 0.9, m-= 0.1, λ = 0.5。即：如果 k 类存在，||vk|| 不会小于 0.9；如果 k 类不存在，||vk|| 不会大于 0.1；惩罚假阳性的重要性大概是惩罚假阴性的重要性的 2 倍。
+
+最终的总体损失包含上述用于分类的的间隔损失，还包含图片重构的重构损失，重构损失由 MSE 计算并乘以系数 α，即：总体损失 = 间隔损失 + α·重构损失。
+
+其中 α = 0.0005，所以间隔损失还是占主导地位。
+
+
+## 动态路由<br>
+动态路由 (dynamic routing) 是找到每一个“低层 VN”的输出最有可能贡献给哪个“高层 VN”。具体到我们的实例，就是找到“三角形或长方形”最有可能组成“房子或帆船”。
+
+用 i 代表低层 VN 中长方形或三角形的索引 (本例中 i = 1, 2)，用 j 代表高层 VN 中房子或帆船的索引 (本例中 j = 1, 2)，定义
+
+bij = 低层 VNi 连接高层 VNj 的可能性，初始值为 0
+cij = 低层 VNi 连接高层 VNj 的概率，总和为 1
+bi = 低层 VNi 连接所有高层 VNj 的可能性，初始值为 0
+ci = 低层 VNi 连接所有高层 VNj 的概率
+Uj|i = 由低层 VNi 预测的高层 VNj
+cij是 bij做 softmax 之后的结果，因此初始值 0.5 (j 层只有 2 个 VN)。
+
+为了达到以上目的，动态路由在每个回合都干了“归一、预测、加总、压缩和更新”这五件事，然后重复若干回合：
 
 
 
