@@ -15,7 +15,12 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 
 ## 网络结构<br>
-胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。
+胶囊网络的整体结构如下图所示：<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%843.png" alt="Sample"  width="300">
+</p>
+
+胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。右支为 Encoder，编码的同时完成分类任务；左支由右支的倒数第二层分化出来，完成图像重构，同时也参与梯度误差的反向传播，帮助优化 Encoder 的权值。
 
 ### Encoder<br>
 下图是胶囊神经网络的 Encoder 结构示意图：<br>
@@ -41,8 +46,6 @@ Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依�
 </p>
 
 可以看到，解码器主要包含若干全连接层。重构的时候单独取出需要重构的向量(上图橘色) ，使用全连接网络重构。以 MNIST 数据集为例，图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
-
-
 
 
 ## 胶囊结构<br>
@@ -102,7 +105,7 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 ### 非线性变换 Squash<br>
 如何对向量做非线性激活呢，答案是 squash 变换：<br>
 <p align="center">
-	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="250">
+	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="200">
 </p>
 
 这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
