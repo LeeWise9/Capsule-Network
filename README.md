@@ -50,7 +50,7 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 vector(ui) 表示胶囊，scalar(xi) 表示普通神经元。
 
-vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum 和 Nonlinear Activation（非线性变换）。
+vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum（加权求和）和 Nonlinear Activation（非线性变换）。
 
 
 为了直观理解，这里是胶囊层计算结构图：<br>
@@ -72,7 +72,7 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 注意：W 的角标 ij 不表示 W 中的元素，而是 W 的索引，即有 ij 个不同的仿射矩阵 W 参与对 i 个向量 u 的仿射变换计算，得到 ij 个输出（中间变量 u-hat）。
 
 
-### Weighting & Sum<br>
+### 加权求和 Weighting & Sum<br>
 这一步等同于传统的神经网络，即加权求和。
 
 要注意的是，系数 c 为常数矩阵，计算结果 s 为向量。
@@ -81,7 +81,7 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 ### 非线性变换 Squash<br>
 上一步的计算结果为向量，如何对向量做非线性激活呢，答案是 squash 变换：<br>
 <p align="center">
-	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="300">
+	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="250">
 </p>
 
 这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
@@ -91,7 +91,7 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 ## 损失函数<br>
 由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="480">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="500">
 </p>
 
 其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测 k 类存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测 k 类不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重总的损失，是各个样例损失之和。
