@@ -58,6 +58,8 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%842.png" alt="Sample"  width="400">
 </p>
 
+注意，上图中除c1、c2、c3为实数之外其余变量均为向量或矩阵。
+
 
 ### 仿射变换 Affine Transform<br>
 简言之，仿射变换是对图片的一种线性变换，变换前后保持对象的平直性和平行性。
@@ -73,9 +75,8 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 
 
 ### 加权求和 Weighting & Sum<br>
-这一步等同于传统的神经网络，即加权求和。
+加权求和这一步需要权值参数 c，计算结果 s 为向量。参数 c 确定了 u-hat 和输出的关系，其值由动态路由（Dynamic Routing）算法确定。
 
-要注意的是，系数 c 为常数矩阵，计算结果 s 为向量。
 
 
 ### 非线性变换 Squash<br>
