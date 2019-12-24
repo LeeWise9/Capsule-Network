@@ -53,7 +53,7 @@ Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依�
 
 vector(ui) 表示胶囊，scalar(xi) 表示普通神经元。
 
-vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum（加权求和）和 Nonlinear Activation（非线性变换）。
+vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum（加权求和）和 Nonlinear Activation（Squash 非线性变换）。
 
 
 为了直观理解，这里是胶囊层计算结构图：<br>
@@ -80,26 +80,27 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 ### 加权求和 Weighting & Sum<br>
 加权求和这一步计算结果 s 为向量，权值参数 c 确定了 u-hat 和输出的关系，其值由动态路由（Dynamic Routing）算法确定，其步骤如下图所示：<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E5%8A%A8%E6%80%81%E8%B7%AF%E7%94%B1%E7%AE%97%E6%B3%95.png" alt="Sample"  width="500">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E5%8A%A8%E6%80%81%E8%B7%AF%E7%94%B1%E7%AE%97%E6%B3%95.png" alt="Sample"  width="600">
 </p>
 
-Dynamic Routing 算法中 u-hat 表示前一步的输出，r 表示循环次数，l 为层代号。
+Dynamic Routing 算法中 u-hat 表示前一步的输出，r 表示循环迭代的次数（文中为 3 次），l 为层代号。
 
 对于包含 i 个胶囊的第 l 层网络和包含 j 个胶囊的第 (l+1) 层网络，初始化权值参数 bij 为 0.<br>
 每一次循环将按照以下步骤进行计算：<br>
 * 1.对层 l 中的每一个胶囊 i，由 bi（bij 取第 i 行） 的 softmax 值计算得 ci；<br>
-* 2.对层 (l+1) 中的每一个胶囊 j，由 cij （ci 共有 j 行）和 u-hat 计算得 sj；<br>
+* 2.对层 (l+1) 中的每一个胶囊 j，由 cij （ci 共有 j 行）和 u-hat 线性求和得 sj；<br>
 * 3.对层 (l+1) 中的每一个胶囊 j，对 sj 做 squash 非线性变换，得 vj；<br>
 * 4.对层 l 和 (l+1) 所有胶囊，将 u-hat 和 vj 做点积，由此更新 bij。<br>
 
-注意，两个向量的点积结果按照它们的夹角有五种情况：(1)夹角为0，有最大正值；(2)夹角为锐角，结果为正；(3)夹角90°，结果为0；(4)夹角为钝角，结果为负；(5)夹角180°，有最大负值。
+注意，向量点积是动态规划算法的精华。两个向量的点积为标量，标量的大小按照向量的夹角有五种情况：(1)夹角为0，有最大正值；(2)夹角为锐角，结果为正；(3)夹角90°，结果为0；(4)夹角为钝角，结果为负；(5)夹角180°，有最大负值。
 
-由向量点积来迭代参数的过程，实际上取决于 vj 与 u-hat 的方向匹配度：夹角越小增益越大。
+由向量点积来迭代参数的过程，实际上取决于 vj 与 u-hat 的方向匹配度：夹角越小增益越大。权值的更新过程实际上就是将方向匹配的向量集合到一起的过程。
 
+Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-maximization algorithm），其具体原理本项目不做过多阐述，感兴趣的读者可以查阅更多资料。
 
 
 ### 非线性变换 Squash<br>
-上一步的计算结果为向量，如何对向量做非线性激活呢，答案是 squash 变换：<br>
+如何对向量做非线性激活呢，答案是 squash 变换：<br>
 <p align="center">
 	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="250">
 </p>
@@ -114,32 +115,13 @@ Dynamic Routing 算法中 u-hat 表示前一步的输出，r 表示循环次数�
 	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="500">
 </p>
 
-其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测 k 类存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测 k 类不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重总的损失，是各个样例损失之和。
+其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测为存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重总的损失，是各个样例损失之和。
 
 论文中 m+= 0.9, m-= 0.1, λ = 0.5。即：如果 k 类存在，||vk|| 不会小于 0.9；如果 k 类不存在，||vk|| 不会大于 0.1；惩罚假阳性的重要性大概是惩罚假阴性的重要性的 2 倍。
 
 最终的总体损失包含上述用于分类的的间隔损失，还包含图片重构的重构损失，重构损失由 MSE 计算并乘以系数 α，即：总体损失 = 间隔损失 + α·重构损失。
 
 其中 α = 0.0005，所以间隔损失还是占主导地位。
-
-
-## 动态路由<br>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
