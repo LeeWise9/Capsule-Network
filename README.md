@@ -55,7 +55,7 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 
 为了直观理解，这里是胶囊层计算结构图：<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%841.png" alt="Sample"  width="400">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%842.png" alt="Sample"  width="400">
 </p>
 
 
