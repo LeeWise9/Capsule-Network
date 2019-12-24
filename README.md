@@ -17,7 +17,7 @@ This project will explore the capsule network, take MNIST as an example, the cod
 ## 网络结构<br>
 胶囊网络的整体结构如下图所示：<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%843.png" alt="Sample"  width="300">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%843.png" alt="Sample"  width="500">
 </p>
 
 胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。右支为 Encoder，编码的同时完成分类任务；左支由右支的倒数第二层分化出来，完成图像重构，同时也参与梯度误差的反向传播，帮助优化 Encoder 的权值。
@@ -25,7 +25,7 @@ This project will explore the capsule network, take MNIST as an example, the cod
 ### Encoder<br>
 下图是胶囊神经网络的 Encoder 结构示意图：<br>
 <p align="center">
-	<img src="https://image.jiqizhixin.com/uploads/editor/bcdc9a37-9371-4a2e-a105-a80a1e76f1c9/640.png" alt="Sample"  width="600">
+	<img src="https://image.jiqizhixin.com/uploads/editor/bcdc9a37-9371-4a2e-a105-a80a1e76f1c9/640.png" alt="Sample"  width="700">
 </p>
 
 可以看到，输入是一张手写数字图片，形状为 28(长)x28(宽)x1(通道数) 。
