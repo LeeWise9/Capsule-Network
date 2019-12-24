@@ -52,6 +52,13 @@ vector(ui) 表示胶囊，scalar(xi) 表示普通神经元。
 
 vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum 和 Nonlinear Activation（非线性变换）。
 
+
+为了直观理解，这里是胶囊层计算结构图：<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BD%91%E7%BB%9C%E7%BB%93%E6%9E%841.png" alt="Sample"  width="400">
+</p>
+
+
 ### 仿射变换 Affine Transform<br>
 简言之，仿射变换是对图片的一种线性变换，变换前后保持对象的平直性和平行性。
 
@@ -60,17 +67,21 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 	<img src="http://images2015.cnblogs.com/blog/120296/201602/120296-20160222070732869-1123994329.png" alt="Sample"  width="500">
 </p>
 
-胶囊网络中，仿射变换要对向量 ui 左乘一个矩阵 W。注意：W 的角标 ij 不表示 W 中的元素，而是 W 的索引，即有 ij 个不同的仿射矩阵 W 参与对 i 个向量 u 的仿射变换计算，得到 ij 个输出（中间变量 u-hat）。
+胶囊网络中，仿射变换要对向量 ui 左乘一个矩阵 W。
+
+注意：W 的角标 ij 不表示 W 中的元素，而是 W 的索引，即有 ij 个不同的仿射矩阵 W 参与对 i 个向量 u 的仿射变换计算，得到 ij 个输出（中间变量 u-hat）。
 
 
 ### Weighting & Sum<br>
-这一步等同于传统的神经网络，即加权求和。要注意的是，系数 c 为常数矩阵，计算结果 s 为向量。
+这一步等同于传统的神经网络，即加权求和。
+
+要注意的是，系数 c 为常数矩阵，计算结果 s 为向量。
 
 
 ### 非线性变换 Squash<br>
 上一步的计算结果为向量，如何对向量做非线性激活呢，答案是 squash 变换：<br>
 <p align="center">
-	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="400">
+	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="300">
 </p>
 
 这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
