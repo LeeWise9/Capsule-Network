@@ -32,22 +32,55 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 
 ## 重构表示<br>
-除了分类，胶囊网络还能由DigitCaps 层重建图片信息，依赖以下的解码器结构：<br>
+除了完成分类，胶囊网络还能由DigitCaps 层重建图片信息，依赖以下的解码器结构：<br>
 <p align="center">
 	<img src="http://5b0988e595225.cdn.sohucs.com/images/20180328/5c0bb065da184881ac44fe456dbb3042.jpeg" alt="Sample"  width="500">
 </p>
 
 可以看到，解码器主要包含若干全连接层。重构的时候单独取出需要重构的向量(上图橘色) ，使用全连接网络重构。以 MNIST 数据集为例，图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
 
+从主体网络-重构网络的结构不难看出，胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。
+
 
 ## 胶囊结构<br>
-输入与输出
+所谓“胶囊”就是向量的集合，胶囊结构的输入输出、计算方法与普通的神经网络的不同可由下图来表述：<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BB%93%E6%9E%84.png" alt="Sample"  width="500">
+</p>
+
+vector(ui) 表示胶囊，scalar(xi) 表示普通神经元。
+
+vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum 和 Nonlinear Activation（非线性变换）。
+
+### 仿射变换 Affine Transform<br>
+简言之，仿射变换是对图片的一种线性变换，变换前后保持对象的平直性和平行性。
+
+仿射变换计算式将对象左乘一个变换矩阵。一些常用的转换矩阵如下所示：<br>
+<p align="center">
+	<img src="http://images2015.cnblogs.com/blog/120296/201602/120296-20160222070732869-1123994329.png" alt="Sample"  width="500">
+</p>
+
+胶囊网络中，仿射变换要对向量 ui 左乘一个矩阵 W。注意：W 的角标 ij 不表示 W 中的元素，而是 W 的索引，即有 ij 个不同的仿射矩阵 W 参与对 i 个向量 u 的仿射变换计算，得到 ij 个输出（中间变量 u-hat）。
+
+
+### Weighting & Sum<br>
+这一步等同于传统的神经网络，即加权求和。要注意的是，系数 c 为常数矩阵，计算结果 s 为向量。
+
+
+### 非线性变换 Squash<br>
+上一步的计算结果为向量，如何对向量做非线性激活呢，答案是 squash 变换：<br>
+<p align="center">
+	<img src="https://ss1.baidu.com/6ONXsjip0QIZ8tyhnq/it/u=1956916309,2761577401&fm=173&app=49&f=JPEG?w=640&h=230&s=49A43C7283B07D8A1E59D1C70000F0B1" alt="Sample"  width="400">
+</p>
+
+这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
+
 
 
 ## 损失函数<br>
 由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="450">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Margin%20loss%20for%20digit%20existence.png" alt="Sample"  width="480">
 </p>
 
 其中：k 是分类；Tk 是分类的指示函数 (k 类存在为 1，不存在为 0)；m+ 为上界，惩罚假阳性(false positive) ，即预测 k 类存在但真实不存在，识别出来但错了的样本；m- 为下界，惩罚假阴性(false negative) ，即预测 k 类不存在但真实存在，没识别出来的样本；λ 是比例系数，调整两者比重总的损失，是各个样例损失之和。
@@ -64,12 +97,10 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 
 
-## 非线性变换 Squash<br>
 
 
 
 
-## 仿射变换 Affine Transform<br>
 
 
 
