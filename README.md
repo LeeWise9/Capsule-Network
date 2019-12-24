@@ -15,7 +15,10 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 
 ## 网络结构<br>
-下图是胶囊神经网络的结构示意图：<br>
+胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。
+
+### Encoder<br>
+下图是胶囊神经网络的 Encoder 结构示意图：<br>
 <p align="center">
 	<img src="https://image.jiqizhixin.com/uploads/editor/bcdc9a37-9371-4a2e-a105-a80a1e76f1c9/640.png" alt="Sample"  width="600">
 </p>
@@ -26,24 +29,24 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 第二步，对 ReLU Conv1 继续做卷积，用了 32 个 stride 为 2 的 9x9x256 的卷积核做了 8 次卷积，得到的输出为向量神经元层 Primary Capsule，图中的排列方式是 8 个 6x6 的一组，共32组；
 
-第三步，将 Primary Capsule 转换为 Digit Capsule，这两层的连接依靠迭代动态路由 (iterative dynamic routing) 算法确定。这两层是全连接的，但不是像传统神经网络标量和标量相连，而是向量与向量相连。PrimaryCaps 里面有 6x6x32 元素，每个元素是一个 1x8 的向量，而 DigitCaps 有 10 个元素 (因为有 10 个数字类别)，每个元素是一个 1x16 的向量。为了让 1x8 向量与 1x16 向量全连接，需要 6x6x32 个 8x16 的矩阵。现在 PrimaryCaps 有 6x6x32 = 1152 个向量，而 DigitCaps 有 10 个向量，那么对于权重 Wij，i= 1,2, …, 1152, j = 0,1, …, 9。
+第三步，将 Primary Capsule 转换为 Digit Capsule，这两层的转变是胶囊网络的核心。详细计算请阅读下文“胶囊结构”。
 
 第四步，对Digit Capsule 中的10 个向量求模，模值最大的向量代表的就是图片概率最大的那个分类。胶囊网络用向量模的大小衡量某个实体出现的概率，模值越大，概率越大。需要注意的是，Capsule 输出的概率总和并不等于 1，也就是 Capsule 有同时识别多个物体的能力。与传统 CNN 的全连接分类层相比，胶囊网络的 DigitCaps 层显然包含更多信息。
 
 
-## 重构表示<br>
-除了完成分类，胶囊网络还能由DigitCaps 层重建图片信息，依赖以下的解码器结构：<br>
+### Decoder<br>
+Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依赖以下结构：<br>
 <p align="center">
 	<img src="http://5b0988e595225.cdn.sohucs.com/images/20180328/5c0bb065da184881ac44fe456dbb3042.jpeg" alt="Sample"  width="500">
 </p>
 
 可以看到，解码器主要包含若干全连接层。重构的时候单独取出需要重构的向量(上图橘色) ，使用全连接网络重构。以 MNIST 数据集为例，图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
 
-从主体网络-重构网络的结构不难看出，胶囊网络其实可以被任认为是一种 Encoder-Decoder 结构的网络。
+
 
 
 ## 胶囊结构<br>
-所谓“胶囊”就是向量的集合，胶囊结构的输入输出、计算方法与普通的神经网络的不同可由下图来表述：<br>
+所谓“胶囊”就是向量的集合，网络结构由 Primary Capsule 层转换为 Digit Capsule 层的过程可描述为“胶囊变换”。胶囊结构的输入输出、计算方法与普通的神经网络的不同可由下图来表述：<br>
 <p align="center">
 	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E8%83%B6%E5%9B%8A%E7%BB%93%E6%9E%84.png" alt="Sample"  width="500">
 </p>
@@ -75,7 +78,13 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 
 
 ### 加权求和 Weighting & Sum<br>
-加权求和这一步需要权值参数 c，计算结果 s 为向量。参数 c 确定了 u-hat 和输出的关系，其值由动态路由（Dynamic Routing）算法确定。
+加权求和这一步计算结果 s 为向量，权值参数 c 确定了 u-hat 和输出的关系，其值由动态路由（Dynamic Routing）算法确定，其步骤如下图所示：<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E5%8A%A8%E6%80%81%E8%B7%AF%E7%94%B1%E7%AE%97%E6%B3%95.png" alt="Sample"  width="500">
+</p>
+
+Dynamic Routing 算法中 u-hat 表示前一步的输出，r 表示循环次数，l 为层代号。
+
 
 
 
