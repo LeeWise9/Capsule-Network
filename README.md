@@ -130,3 +130,9 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 <br>
 以上内容就是胶囊网络中的一些核心思想，下面是胶囊网络的 Keras 实现，将以 MNIST 数据集为例。
 
+
+
+
+
+
+
