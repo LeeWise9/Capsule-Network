@@ -13,7 +13,8 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 胶囊网络的工作原理归纳成一句话就是，所有特征的状态信息，都将以向量的形式被胶囊封装。比起“胶囊网络”这个称呼，向量神经元 (vector neuron) 或者张量神经元 (tensor neuron) 形容起来似乎更贴切。
 
-
+<br>
+<br>
 ## 网络结构<br>
 胶囊网络的整体结构如下图所示：<br>
 <p align="center">
@@ -47,7 +48,8 @@ Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依�
 
 可以看到，解码器主要包含若干全连接层。重构的时候单独取出需要重构的向量(上图橘色) ，使用全连接网络重构。以 MNIST 数据集为例，图片形状为 28x28，解码器的输出层为一个长度为 784 的向量，通过 reshape 重构为图片。
 
-
+<br>
+<br>
 ## 胶囊结构<br>
 所谓“胶囊”就是向量的集合，网络结构由 Primary Capsule 层转换为 Digit Capsule 层的过程可描述为“胶囊变换”。胶囊结构的输入输出、计算方法与普通的神经网络的不同可由下图来表述：<br>
 <p align="center">
@@ -110,7 +112,8 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 
 这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
 
-
+<br>
+<br>
 ## 损失函数<br>
 由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
 <p align="center">
@@ -127,8 +130,104 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 
 <br>
 <br>
-<br>
 以上内容就是胶囊网络中的一些核心思想，下面是胶囊网络的 Keras 实现，将以 MNIST 数据集为例。
+
+<br>
+<br>
+## 构建模型<br>
+模型结构按照原文构建，Encoder 部分需要自定义 PrimaryCap 层、CapsuleLayer 层和向量模值计算层；Decoder 部分为序贯模型，由全连接层构成，输出为重构图片。需要注意的是，Decoder 的输入值需要经蒙版操作：训练时用真实类别值替代胶囊层的输出值，评估/测试时用最向量大长度值做蒙版。
+```python
+def CapsNet(input_shape, n_class, routings):
+    """
+    针对 MNIST 手写字符识别的胶囊网络 
+    ## input_shape: 输入数据的维度, 长度为3的列表, [width, height, channels]
+    ## n_class: 类别的数量
+    ## routings: routing算法迭代的次数
+    :return: 返回两个模型, 第一个用于训练, 第二个用于测试
+    """
+    # Encoder network.输入为图片
+    x = layers.Input(shape=input_shape)
+    # Layer 1: 卷积层
+    conv1 = layers.Conv2D(filters=256, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
+    # Layer 2: PrimaryCap（自定义层）
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
+    # Layer 3: CapsuleLayer（自定义胶囊层）
+    digitcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,name='digitcaps')(primarycaps)
+    # Layer 4: 模值计算层（自定义层）
+    out_caps = Length(name='capsnet')(digitcaps)
+
+    # Decoder network.输入为向量
+    y = layers.Input(shape=(n_class,))
+    # 蒙版操作，对decoder输入的标准化
+    masked_by_y = Mask()([digitcaps, y])  # 用真实值取代胶囊层的输出值。此项用于训练
+    masked = Mask()(digitcaps)  # 用最大长度值做胶囊的蒙版。此项用于评估
+
+    # 包含3层的全连接神经网络（序贯模型）
+    decoder = models.Sequential(name='decoder')
+    decoder.add(layers.Dense(512, activation='relu', input_dim=16*n_class))
+    decoder.add(layers.Dense(1024, activation='relu'))
+    decoder.add(layers.Dense(np.prod(input_shape), activation='sigmoid'))
+    decoder.add(layers.Reshape(target_shape=input_shape, name='out_recon'))
+    # 最终将输出转为图片
+
+    # 训练模型和评估模型
+    train_model = models.Model([x, y], [out_caps, decoder(masked_by_y)])
+    eval_model = models.Model(x, [out_caps, decoder(masked)])
+
+    return train_model, eval_model
+```
+
+该函数的输出为两个 model 对象，分别对应训练模型和评估/测试模型。
+
+<br>
+<br>
+## 几个自定义层<br>
+
+```python
+
+```
+
+
+
+<br>
+<br>
+## 几个重要函数<br>
+这里主要说明一下损失函数 margin_loss 和非线性激活函数 Squash。
+
+### 损失函数<br>
+损失函数的计算法则按照原文设计。需要注意的是，参与计算的变量类型为 Tensor，所以需要调用 keras.backend 做计算。
+
+```python
+def margin_loss(y_true, y_pred):
+    """
+    胶囊网络编码器损失函数
+    ## y_true: [None, n_classes]
+    ## y_pred: [None, num_capsule]
+    :return: a scalar loss value.
+    """
+    L = y_true * K.square(K.maximum(0., 0.9 - y_pred)) + 0.5 * (1 - y_true) * K.square(K.maximum(0., y_pred - 0.1))
+    return K.mean(K.sum(L, 1))
+```
+
+### Squash 函数<br>
+同样是调用 keras.backend 做计算，输出值域范围：0~1。
+
+```python
+def squash(vectors, axis=-1):
+    """
+    对向量的非线性激活函数
+    ## vectors: some vectors to be squashed, N-dim tensor
+    ## axis: the axis to squash
+    :return: a Tensor with same shape as input vectors
+    """
+    s_squared_norm = K.sum(K.square(vectors), axis, keepdims=True)
+    scale = s_squared_norm / (1 + s_squared_norm) / K.sqrt(s_squared_norm + K.epsilon())
+    return scale * vectors
+```
+
+
+
+
 
 
 
