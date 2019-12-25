@@ -60,7 +60,7 @@ Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依�
 
 vector(ui) 表示胶囊，scalar(xi) 表示普通神经元。
 
-vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum（加权求和）和 Nonlinear Activation（Squash 非线性变换）。
+vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform（仿射变换），Weighting & Sum（加权求和）和 Nonlinear Activation（Squash 非线性变换）。其中，加权求和涉及到动态路由（Dynamic Routing）算法，是胶囊结构的精华。
 
 
 为了直观理解，这里是胶囊层计算结构图：<br>
@@ -84,7 +84,7 @@ vector(ui) 的输入输出都是向量，中间依次要进行 Affine Transform�
 注意：W 的角标 ij 不表示 W 中的元素，而是 W 的索引，即有 ij 个不同的仿射矩阵 W 参与对 i 个向量 u 的仿射变换计算，得到 ij 个输出（中间变量 u-hat）。
 
 
-### 加权求和 Weighting & Sum<br>
+### 加权求和与动态路由<br>
 加权求和这一步计算结果 s 为向量，权值参数 c 确定了 u-hat 和输出的关系，其值由动态路由（Dynamic Routing）算法确定，其步骤如下图所示：<br>
 <p align="center">
 	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/%E5%8A%A8%E6%80%81%E8%B7%AF%E7%94%B1%E7%AE%97%E6%B3%95.png" alt="Sample"  width="600">
@@ -135,6 +135,7 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 <br>
 以上内容就是胶囊网络中的一些核心思想，下面是胶囊网络的 Keras 实现，将以 MNIST 数据集为例。
 
+<br>
 <br>
 <br>
 
@@ -212,8 +213,53 @@ def PrimaryCap(inputs, dim_capsule, n_channels, kernel_size, strides, padding):
 ```
 
 ### DigitCap 层<br>
-```python
+这一层的输入、输出均为向量。输入向量的维度为 input_dim_capsule（原文为8），向量的个数为 input_num_capsule（原文为 6x6x32=1152）。输出的向量个数为 num_capsule（也就是类别数，取10），输出向量长度为 dim_capsule（原文为 16），通过输入向量和矩阵 W 相乘得到。
 
+该层定义了 Routing 算法，主要是更新参数 b 的值，具体计算步骤参见上文。
+
+```python
+class CapsuleLayer(layers.Layer):
+    """
+    胶囊层. 输入输出都为向量. 
+    ## num_capsule: 本层包含的胶囊数量
+    ## dim_capsule: 输出的每一个胶囊向量的维度
+    ## routings: routing 算法的迭代次数
+    """
+    def __init__(self, num_capsule, dim_capsule, routings=3, kernel_initializer='glorot_uniform',**kwargs):
+        super(CapsuleLayer, self).__init__(**kwargs)
+        self.num_capsule = num_capsule
+        self.dim_capsule = dim_capsule
+        self.routings = routings
+        self.kernel_initializer = initializers.get(kernel_initializer)
+
+    def build(self, input_shape):
+        assert len(input_shape) >= 3, '输入的 Tensor 的形状[None, input_num_capsule, input_dim_capsule]'
+        self.input_num_capsule = input_shape[1]
+        self.input_dim_capsule = input_shape[2]
+
+        #转换矩阵
+        self.W = self.add_weight(shape=[self.num_capsule, self.input_num_capsule,
+                                        self.dim_capsule, self.input_dim_capsule],
+                                initializer=self.kernel_initializer,name='W')
+        self.built = True
+
+    def call(self, inputs, training=None):
+        inputs_expand = K.expand_dims(inputs, 1)
+        inputs_tiled = K.tile(inputs_expand, [1, self.num_capsule, 1, 1])
+        inputs_hat = K.map_fn(lambda x: K.batch_dot(x, self.W, [2, 3]),elems=inputs_tiled)
+
+        # Begin: Routing算法
+        b = tf.zeros(shape=[K.shape(inputs_hat)[0], self.num_capsule, self.input_num_capsule])
+        
+        assert self.routings > 0, 'The routings should be > 0.'
+        for i in range(self.routings):
+            C = tf.nn.softmax(b, dim=1)
+            outputs = squash(K. batch_dot(C, inputs_hat, [2, 2])) # [None, 10, 16]
+        
+            if i < self.routings - 1:
+                b += K.batch_dot(outputs, inputs_hat, [2, 3])
+        # End: Routing 算法
+        return outputs
 ```
 
 <br>
@@ -254,14 +300,6 @@ def squash(vectors, axis=-1):
     scale = s_squared_norm / (1 + s_squared_norm) / K.sqrt(s_squared_norm + K.epsilon())
     return scale * vectors
 ```
-
-
-
-
-
-
-
-
 
 
 
