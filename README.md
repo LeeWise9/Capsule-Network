@@ -15,6 +15,7 @@ This project will explore the capsule network, take MNIST as an example, the cod
 
 <br>
 <br>
+
 ## 网络结构<br>
 胶囊网络的整体结构如下图所示：<br>
 <p align="center">
@@ -50,6 +51,7 @@ Encoder 完成分类和编码，由DigitCaps 层可以重建图片信息，依�
 
 <br>
 <br>
+
 ## 胶囊结构<br>
 所谓“胶囊”就是向量的集合，网络结构由 Primary Capsule 层转换为 Digit Capsule 层的过程可描述为“胶囊变换”。胶囊结构的输入输出、计算方法与普通的神经网络的不同可由下图来表述：<br>
 <p align="center">
@@ -114,6 +116,7 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 
 <br>
 <br>
+
 ## 损失函数<br>
 由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
 <p align="center">
@@ -134,6 +137,7 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 
 <br>
 <br>
+
 ## 构建模型<br>
 模型结构按照原文构建，Encoder 部分需要自定义 PrimaryCap 层、CapsuleLayer 层和向量模值计算层；Decoder 部分为序贯模型，由全连接层构成，输出为重构图片。需要注意的是，Decoder 的输入值需要经蒙版操作：训练时用真实类别值替代胶囊层的输出值，评估/测试时用最向量大长度值做蒙版。
 ```python
@@ -181,6 +185,7 @@ def CapsNet(input_shape, n_class, routings):
 
 <br>
 <br>
+
 ## 几个自定义层<br>
 
 ```python
@@ -191,6 +196,7 @@ def CapsNet(input_shape, n_class, routings):
 
 <br>
 <br>
+
 ## 几个重要函数<br>
 这里主要说明一下损失函数 margin_loss 和非线性激活函数 Squash。
 
