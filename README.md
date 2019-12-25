@@ -111,7 +111,6 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 这个变换将输出值归一化到 0~1 之间，并保留了向量原有的方向信息。当 ||sj|| 很大时，输出 vj 接近 1，当 ||sj|| 很小时，输出 vj 接近 0。
 
 
-
 ## 损失函数<br>
 由于 Capsule 允许多个分类同时存在，所以不能直接用传统的交叉熵 (cross-entropy) 损失，作者采用的是是用间隔损失 (margin loss)。<br>
 <p align="center">
@@ -126,6 +125,8 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 
 其中 α = 0.0005，所以间隔损失还是占主导地位。
 
-
+<br>
+<br>
+<br>
 以上内容就是胶囊网络中的一些核心思想，下面是胶囊网络的 Keras 实现，将以 MNIST 数据集为例。
 
