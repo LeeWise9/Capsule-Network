@@ -139,7 +139,9 @@ Dynamic Routing 算法的理论可以追溯到最大期望算法（Expectation-m
 <br>
 
 ## 构建模型<br>
-模型结构按照原文构建，Encoder 部分需要自定义 PrimaryCap 层、CapsuleLayer 层和向量模值计算层；Decoder 部分为序贯模型，由全连接层构成，输出为重构图片。需要注意的是，Decoder 的输入值需要经蒙版操作：训练时用真实类别值替代胶囊层的输出值，评估/测试时用最向量大长度值做蒙版。
+模型结构按照原文构建，Encoder 部分需要自定义 PrimaryCap 层、CapsuleLayer 层和向量模值计算层；Decoder 部分为序贯模型，由全连接层构成，输出为重构图片。
+
+需要注意的是，Decoder 的输入值需要经蒙版操作：训练时用真实类别值替代胶囊层的输出值，评估/测试时用最向量大长度值做蒙版。
 ```python
 def CapsNet(input_shape, n_class, routings):
     """
@@ -187,12 +189,32 @@ def CapsNet(input_shape, n_class, routings):
 <br>
 
 ## 几个自定义层<br>
+胶囊网络里面有几个层需要自行构建，分别为 PrimaryCap 层、DigitCap 层等。
 
+### PrimaryCap 层<br>
+这一层还是建立在 2 维卷积的基础上，输出的时候要 reshape 一下。
+
+n_channels 为重复做卷积的次数（原文取值为 32）；dim_capsule 为向量长度（原文为 8）。
+
+```python
+def PrimaryCap(inputs, dim_capsule, n_channels, kernel_size, strides, padding):
+    """
+    进行普通二维卷积 `n_channels` 次, 然后将所有的胶囊重叠起来
+    ## inputs: 4D tensor, shape=[None, width, height, channels]
+    ## dim_capsule: the dim of the output vector of capsule
+    ## n_channels: the number of types of capsules
+    :return: output tensor, shape=[None, num_capsule, dim_capsule]
+    """
+    output = layers.Conv2D(filters=dim_capsule*n_channels, kernel_size=kernel_size, 
+                           strides=strides, padding=padding, name='primarycap_conv2d')(inputs)
+    outputs = layers.Reshape(target_shape=[-1, dim_capsule], name='primarycap_reshape')(output)
+    return layers.Lambda(squash, name='primarycap_squash')(outputs)
+```
+
+### DigitCap 层<br>
 ```python
 
 ```
-
-
 
 <br>
 <br>
@@ -201,7 +223,9 @@ def CapsNet(input_shape, n_class, routings):
 这里主要说明一下损失函数 margin_loss 和非线性激活函数 Squash。
 
 ### 损失函数<br>
-损失函数的计算法则按照原文设计。需要注意的是，参与计算的变量类型为 Tensor，所以需要调用 keras.backend 做计算。
+损失函数的计算法则按照原文设计。
+
+需要注意的是，参与计算的变量类型为 Tensor，所以需要调用 keras.backend 做计算。
 
 ```python
 def margin_loss(y_true, y_pred):
