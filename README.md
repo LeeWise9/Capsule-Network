@@ -301,5 +301,14 @@ def squash(vectors, axis=-1):
     return scale * vectors
 ```
 
+<br>
+<br>
+<br>
+
+下面是在 MNIST 数据集上训练到的误差及准确率变化曲线，由于计算量较大，只训练了 10 个 epoch。<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Figure_1.png" alt="Sample"  width="500">
+</p>
+
 
 
