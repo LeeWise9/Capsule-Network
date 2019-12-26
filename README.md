@@ -305,10 +305,16 @@ def squash(vectors, axis=-1):
 <br>
 <br>
 
-下面是在 MNIST 数据集上训练到的误差及准确率变化曲线，由于计算量较大，只训练了 10 个 epoch。<br>
+下面是在 MNIST 数据集上训练到的误差及准确率变化曲线，由于计算量较大，只训练了 10 个 epoch，。<br>
 <p align="center">
-	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Figure_1.png" alt="Sample"  width="500">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/Figure_1.png" alt="Sample"  width="400">
 </p>
 
+最终训练准确度 capsnet_acc：0.9915，测试准确度 val_capsnet_acc：0.9933。
 
+下面是真实图像与重构图像对比图：<br>
+<p align="center">
+	<img src="https://github.com/LeeWise9/Img_repositories/blob/master/real_and_recon.png" alt="Sample"  width="400">
+</p>
 
+前 5 行是数据集里的原图，后 5 行是与之对应的胶囊网络重构图像，大部分均分类正确，重构效果良好。
